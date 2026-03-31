@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   Shield,
@@ -13,6 +13,7 @@ import {
   Copy,
   Check,
   FileIcon,
+  Loader2,
 } from "lucide-react";
 import { Button, Card, Input, Label } from "@/src/components/ui";
 import { toast } from "sonner";
@@ -39,7 +40,8 @@ interface FileAttachment {
   path: string;
 }
 
-export default function AccessLinkPage() {
+// ── useSearchParams() MUST live inside a component wrapped with <Suspense> ──
+function AccessLinkContent() {
   const { id } = useParams<{ id: string }>();
   const decryptionKey = useSearchParams().get("decryptionKey") || undefined;
   const router = useRouter();
@@ -61,7 +63,6 @@ export default function AccessLinkPage() {
   const isExpired = expiresAt ? secondsLeft <= 0 : false;
 
   useEffect(() => {
-    // fetch metadata when id becomes available and optionally unlock
     if (!id || !decryptionKey) return;
     const fetchMeta = async () => {
       try {
@@ -76,7 +77,6 @@ export default function AccessLinkPage() {
         toast.error(err.message || "Unable to check secret");
       }
     };
-
     fetchMeta();
   }, [id, decryptionKey]);
 
@@ -91,37 +91,26 @@ export default function AccessLinkPage() {
   const handleUnlock = async () => {
     try {
       const encryptionKey = decryptionKey;
-      if (!encryptionKey) {
-        throw new Error("Decryption key not available");
-      }
+      if (!encryptionKey) throw new Error("Decryption key not available");
 
       const secretData = await getSecret(id!, passwordEntered || undefined);
       const secret = secretData.secret || undefined;
-      const title = secretData.title || undefined;
-      const files = secretData.files || [];
+      const titleRaw = secretData.title || undefined;
+      const filesRaw = secretData.files || [];
 
-      setFiles(files);
+      setFiles(filesRaw);
 
       if (secret) {
-        const decryptedContent = await decryptField(
-          secret,
-          encryptionKey,
-          secretData.salt || "",
-        );
+        const decryptedContent = await decryptField(secret, encryptionKey, secretData.salt || "");
         setContent(decryptedContent);
       }
-      if (title) {
-        const decryptedTitle = await decryptField(
-          title,
-          encryptionKey,
-          secretData.salt || "",
-        );
+      if (titleRaw) {
+        const decryptedTitle = await decryptField(titleRaw, encryptionKey, secretData.salt || "");
         setTitle(decryptedTitle);
       }
       setIsUnlocked(true);
       if (secretData.views != null) {
         setViewsRemaining(secretData.views);
-        console.log("Max views:", secretData.maxViews);
         setMaxViews(secretData.maxViews);
       }
       toast.success("Access granted!");
@@ -138,12 +127,10 @@ export default function AccessLinkPage() {
   };
 
   const handlePrintFile = async (file: FileAttachment) => {
-    // test if file is printable based on content type using function in files utils, if not show error toast
     if (!isPrintableFile(file)) {
       toast.error("This file type cannot be printed.");
       return;
     }
-
     await handlePrint(file);
     toast.success(`Printing ${file.filename}...`);
   };
@@ -174,22 +161,26 @@ export default function AccessLinkPage() {
   }
 
   if (!isUnlocked) {
-    if (isPasswordProtected) {
-      return (
-        <div className="pt-32 pb-24 min-h-screen flex items-center justify-center px-6">
-          <div className="w-full max-w-md">
-            <Card className="p-8 border-border/50 backdrop-blur-sm bg-card/50">
-              <div className="text-center mb-8">
-                <div className="p-4 rounded-full bg-gradient-to-br from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] inline-block mb-4 shadow-lg shadow-indigo-500/25">
-                  <Lock className="size-8 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold mb-2">Password Protected</h2>
-                <p className="text-muted-foreground">
-                  Enter the password to access this secure content
-                </p>
+    return (
+      <div className="pt-32 pb-24 min-h-screen flex items-center justify-center px-6">
+        <div className="w-full max-w-md">
+          <Card className="p-8 border-border/50 backdrop-blur-sm bg-card/50">
+            <div className="text-center mb-8">
+              <div className="p-4 rounded-full bg-gradient-to-br from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] inline-block mb-4 shadow-lg shadow-indigo-500/25">
+                <Lock className="size-8 text-white" />
               </div>
+              <h2 className="text-2xl font-bold mb-2">
+                {isPasswordProtected ? "Password Protected" : "Unlock Content"}
+              </h2>
+              <p className="text-muted-foreground">
+                {isPasswordProtected
+                  ? "Enter the password to access this secure content"
+                  : `This content can only be viewed ${viewsRemaining} more time(s) and will expire in ${timeRemaining}.`}
+              </p>
+            </div>
 
-              <div className="space-y-4">
+            <div className="space-y-4">
+              {isPasswordProtected && (
                 <div>
                   <Label htmlFor="password">Password</Label>
                   <Input
@@ -203,47 +194,18 @@ export default function AccessLinkPage() {
                     autoFocus
                   />
                 </div>
-
-                <Button
-                  className="w-full bg-gradient-to-r from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] text-white hover:opacity-90"
-                  onClick={handleUnlock}
-                >
-                  Unlock Content
-                </Button>
-              </div>
-            </Card>
-          </div>
+              )}
+              <Button
+                className="w-full bg-gradient-to-r from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] text-white hover:opacity-90"
+                onClick={handleUnlock}
+              >
+                Unlock Content
+              </Button>
+            </div>
+          </Card>
         </div>
-      );
-    } else {
-      return (
-        <div className="pt-32 pb-24 min-h-screen flex items-center justify-center px-6">
-          <div className="w-full max-w-md">
-            <Card className="p-8 border-border/50 backdrop-blur-sm bg-card/50">
-              <div className="text-center mb-8">
-                <div className="p-4 rounded-full bg-gradient-to-br from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] inline-block mb-4 shadow-lg shadow-indigo-500/25">
-                  <Lock className="size-8 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold mb-2">Unlock Content</h2>
-                <p className="text-muted-foreground">
-                  This content can only be viewed {viewsRemaining} more time(s)
-                  and will expire in {timeRemaining}.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <Button
-                  className="w-full bg-gradient-to-r from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] text-white hover:opacity-90"
-                  onClick={handleUnlock}
-                >
-                  Unlock Content
-                </Button>
-              </div>
-            </Card>
-          </div>
-        </div>
-      );
-    }
+      </div>
+    );
   }
 
   return (
@@ -262,21 +224,15 @@ export default function AccessLinkPage() {
                   <p className="font-mono font-semibold">{timeRemaining}</p>
                 </div>
               </div>
-
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-gradient-to-br from-green-500/10 to-emerald-500/10">
                   <Eye className="size-5 text-green-500" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">
-                    Views remaining
-                  </p>
-                  <p className="font-semibold">
-                    {viewsRemaining}/{maxViews}
-                  </p>
+                  <p className="text-xs text-muted-foreground">Views remaining</p>
+                  <p className="font-semibold">{viewsRemaining}/{maxViews}</p>
                 </div>
               </div>
-
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500/10 to-cyan-500/10">
                   <Shield className="size-5 text-blue-500" />
@@ -296,11 +252,7 @@ export default function AccessLinkPage() {
                 <div className="p-2 rounded-lg bg-gradient-to-br from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] shadow-lg shadow-indigo-500/25">
                   <Shield className="size-5 text-white" />
                 </div>
-                <div>
-                  <h3 className="font-semibold">
-                    {title ? title : "Secure Message"}
-                  </h3>
-                </div>
+                <h3 className="font-semibold">{title ?? "Secure Message"}</h3>
               </div>
             </div>
 
@@ -311,21 +263,11 @@ export default function AccessLinkPage() {
                 </pre>
               </div>
 
-              <Button
-                variant="outline"
-                onClick={() => copyTextContent(content || "")}
-                className="gap-2"
-              >
+              <Button variant="outline" onClick={() => copyTextContent(content || "")} className="gap-2">
                 {copiedText ? (
-                  <>
-                    <Check className="size-4" />
-                    Copied
-                  </>
+                  <><Check className="size-4" />Copied</>
                 ) : (
-                  <>
-                    <Copy className="size-4" />
-                    Copy Text
-                  </>
+                  <><Copy className="size-4" />Copy Text</>
                 )}
               </Button>
 
@@ -335,8 +277,7 @@ export default function AccessLinkPage() {
                   <p className="font-semibold mb-1">Security Notice</p>
                   <p>
                     This content will be permanently deleted after expiration or
-                    when view limit is reached. Please save it securely if
-                    needed.
+                    when view limit is reached. Please save it securely if needed.
                   </p>
                 </div>
               </div>
@@ -354,60 +295,42 @@ export default function AccessLinkPage() {
                   <div>
                     <h3 className="font-semibold">Attached Files</h3>
                     <p className="text-sm text-muted-foreground">
-                      {files.length} file
-                      {files.length !== 1 ? "s" : ""} attached
+                      {files.length} file{files.length !== 1 ? "s" : ""} attached
                     </p>
                   </div>
                 </div>
               </div>
-
-              <div className="p-6">
-                <div className="space-y-3">
-                  {files.map((file) => (
-                    <div
-                      key={file.id}
-                      className="p-4 rounded-lg border border-border/50 bg-muted/20"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-indigo-500/10 shrink-0">
-                          <FileIcon className="size-5 text-indigo-500" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">
-                            {file.originalFilename}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatFileSize(file.fileSize)}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDownloadFile(file)}
-                            className="gap-2"
-                          >
-                            <Download className="size-4" />
-                            Download
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => handlePrintFile(file)}
-                            className="gap-2 bg-gradient-to-r from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] text-white hover:opacity-90"
-                          >
-                            <Printer className="size-4" />
-                            Print
-                          </Button>
-                        </div>
+              <div className="p-6 space-y-3">
+                {files.map((file) => (
+                  <div key={file.id} className="p-4 rounded-lg border border-border/50 bg-muted/20">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-indigo-500/10 shrink-0">
+                        <FileIcon className="size-5 text-indigo-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{file.originalFilename}</p>
+                        <p className="text-xs text-muted-foreground">{formatFileSize(file.fileSize)}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button size="sm" variant="outline" onClick={() => handleDownloadFile(file)} className="gap-2">
+                          <Download className="size-4" />Download
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handlePrintFile(file)}
+                          className="gap-2 bg-gradient-to-r from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] text-white hover:opacity-90"
+                        >
+                          <Printer className="size-4" />Print
+                        </Button>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
             </Card>
           )}
 
-          {/* Watermark for print */}
+          {/* Print watermark */}
           <div className="print:block hidden fixed inset-0 pointer-events-none">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-6xl font-bold opacity-5 -rotate-45 whitespace-nowrap">
               VANISHVAULT SECURE DOCUMENT
@@ -416,5 +339,23 @@ export default function AccessLinkPage() {
         </AnimatedSection>
       </div>
     </div>
+  );
+}
+
+// Page shell — wraps content in Suspense so useSearchParams() is valid
+export default function AccessLinkPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="pt-32 pb-24 min-h-screen flex items-center justify-center">
+          <div className="flex items-center gap-3 text-muted-foreground">
+            <Loader2 className="size-5 animate-spin" />
+            Loading secure content...
+          </div>
+        </div>
+      }
+    >
+      <AccessLinkContent />
+    </Suspense>
   );
 }
