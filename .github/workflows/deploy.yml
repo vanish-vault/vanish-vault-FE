@@ -1,0 +1,131 @@
+name: CI/CD — Vanish Vault Frontend
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  # e.g. ghcr.io/your-org/vanish-vault-fe
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ──────────────────────────────────────────────────────────────────────────
+  # Job 1: Lint & type-check
+  # ──────────────────────────────────────────────────────────────────────────
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Run ESLint
+        run: yarn lint
+
+      - name: Run TypeScript type check
+        run: yarn tsc --noEmit
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Job 2: Build & push Docker image (only on push to main)
+  # ──────────────────────────────────────────────────────────────────────────
+  build-and-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: lint
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata (tags & labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Pass NEXT_PUBLIC_ vars as build-args from GitHub Secrets
+          build-args: |
+            NEXT_PUBLIC_BACKEND_URL=${{ secrets.NEXT_PUBLIC_BACKEND_URL }}
+            NEXT_PUBLIC_RAZORPAY_KEY_ID=${{ secrets.NEXT_PUBLIC_RAZORPAY_KEY_ID }}
+          # Layer caching via GitHub Actions cache
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Job 3: Deploy to server via SSH (only on push to main)
+  # ──────────────────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    environment:
+      name: production
+      url: ${{ secrets.PRODUCTION_URL }}
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Log in to GHCR on the server
+            echo "${{ secrets.GITHUB_TOKEN }}" | \
+              docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Pull the latest image
+            docker pull ghcr.io/${{ github.repository }}:latest
+
+            # Stop & remove existing container (ignore error if not running)
+            docker stop vanish-vault-fe || true
+            docker rm   vanish-vault-fe || true
+
+            # Start the new container
+            docker run -d \
+              --name vanish-vault-fe \
+              --restart unless-stopped \
+              -p 3000:3000 \
+              -e BACKEND_URL=${{ secrets.BACKEND_URL }} \
+              ghcr.io/${{ github.repository }}:latest
+
+            # Prune old images to save disk space
+            docker image prune -f

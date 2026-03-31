@@ -1,0 +1,22 @@
+@import "tailwindcss" source(none);
+@source '../**/*.{js,ts,jsx,tsx}';
+
+@import "tw-animate-css";
+
+/* Print styles for access link page */
+@media print {
+  nav,
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .print\:block {
+    display: block !important;
+  }
+}
