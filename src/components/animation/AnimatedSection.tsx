@@ -8,7 +8,7 @@ interface AnimatedSectionProps {
   className?: string;
   delay?: number;
   animate?: "fade-up" | "scale";
-  as?: keyof JSX.IntrinsicElements;
+  as?: keyof React.JSX.IntrinsicElements;
 }
 
 export function AnimatedSection({

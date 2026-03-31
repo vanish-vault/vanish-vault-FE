@@ -23,6 +23,9 @@ ARG NEXT_PUBLIC_RAZORPAY_KEY_ID
 ENV NEXT_PUBLIC_BACKEND_URL=$NEXT_PUBLIC_BACKEND_URL
 ENV NEXT_PUBLIC_RAZORPAY_KEY_ID=$NEXT_PUBLIC_RAZORPAY_KEY_ID
 
+# Signal to next.config.ts to enable standalone output (Docker-only)
+ENV DOCKER_BUILD=true
+
 # Disable Next.js telemetry during build
 ENV NEXT_TELEMETRY_DISABLED=1
 
