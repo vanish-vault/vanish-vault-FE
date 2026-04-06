@@ -60,12 +60,16 @@ function AccessLinkContent() {
   const [isPasswordProtected, setIsPasswordProtected] = useState(false);
 
   const timeRemaining = formatSeconds(secondsLeft);
+  const [isChecking, setIsChecking] = useState(true);
   const [isNotFound, setIsNotFound] = useState(false);
   const isExpired = (expiresAt ? secondsLeft <= 0 : false) || isNotFound;
 
   useEffect(() => {
-    if (!id || !decryptionKey) return;
-    const fetchMeta = async () => {
+    async function fetchMeta() {
+      if (!id) {
+        setIsChecking(false);
+        return;
+      }
       try {
         const meta = await checkSecret(id);
         setIsPasswordProtected(meta.isPasswordProtected);
@@ -80,10 +84,12 @@ function AccessLinkContent() {
         } else {
           toast.error(err.message || "Unable to check secret");
         }
+      } finally {
+        setIsChecking(false);
       }
-    };
+    }
     fetchMeta();
-  }, [id, decryptionKey]);
+  }, [id]);
 
   useEffect(() => {
     if (isExpired) return;
@@ -148,6 +154,17 @@ function AccessLinkContent() {
     handleDownload(file);
     toast.success(`${file.originalFilename} downloaded!`);
   };
+
+  if (isChecking) {
+    return (
+      <div className="pt-32 pb-24 min-h-screen flex items-center justify-center px-6">
+        <div className="flex flex-col items-center gap-4 text-muted-foreground animate-in fade-in duration-500">
+          <Loader2 className="size-12 animate-spin text-indigo-500" />
+          <p className="text-lg font-medium">Verifying secure link...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isExpired) {
     return (
@@ -258,8 +275,8 @@ function AccessLinkContent() {
           <Card className="border-border/50 backdrop-blur-sm bg-card/50 overflow-hidden mb-6">
             <div className="p-6 border-b border-border/50 bg-gradient-to-br from-indigo-500/5 via-purple-500/5 to-blue-500/5">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-gradient-to-br from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] shadow-lg shadow-indigo-500/25">
-                  <Shield className="size-5 text-white" />
+                <div className="p-1 rounded-lg bg-card border border-border shadow-md">
+                  <img src="/favicon.png" alt="VanishVault" className="size-8" />
                 </div>
                 <h3 className="font-semibold">{title ?? "Secure Message"}</h3>
               </div>
