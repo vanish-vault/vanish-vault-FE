@@ -19,6 +19,9 @@ export const metadata: Metadata = {
   title: "Secure File Sharing with Expiring Encrypted Links | VanishVault",
   description:
     "Securely share encrypted files or credentials with expiring links, password protection, view limits, and instant browser print access.",
+  icons: {
+    icon: "/favicon.png",
+  },
 };
 
 export default function RootLayout({

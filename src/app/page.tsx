@@ -5,6 +5,7 @@ import { Shield, Clock, Lock, Eye, Printer, Check, Crown, ArrowRight } from "luc
 import { Button, Card } from "@/src/components/ui";
 import { HeroSection } from "@/src/components/landing";
 import { AnimatedSection } from "@/src/components/animation";
+import { FooterLogo } from "@/src/components/layout/FooterLogo";
 import { getPlans, Plan } from "@/src/services/plans";
 
 const features = [
@@ -302,13 +303,8 @@ export default async function Home() {
       <footer className="border-t border-border/40 py-12 bg-card/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-gradient-to-br from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)]">
-                <Shield className="size-5 text-white" />
-              </div>
-              <span className="text-lg font-semibold bg-gradient-to-r from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] bg-clip-text text-transparent">
-                VanishVault
-              </span>
+            <div className="flex items-center">
+              <FooterLogo />
             </div>
 
             <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground">

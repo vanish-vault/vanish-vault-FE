@@ -83,7 +83,7 @@ export default function PricingPlansClient({
         setIsProUser(
           data.maxFiles === -1 ||
             data.plan?.name?.toLowerCase().includes("pro") ||
-            false
+            false,
         );
       })
       .catch(() => {
@@ -128,7 +128,7 @@ export default function PricingPlansClient({
         subscription_id: subscription.id,
         name: "Vanish Vault",
         description: `Pro Plan – Yearly Subscription`,
-        image: "https://cdn-icons-png.flaticon.com/512/115/115681.png",
+        image: `${window.location.origin}/favicon.png`,
         handler: function (response: any) {
           toast.success("Payment Successful!");
           router.push(
@@ -178,7 +178,6 @@ export default function PricingPlansClient({
 
   return (
     <>
-
       <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-16">
         {plans.map((plan) => {
           const Icon = plan.name.toLowerCase().includes("pro") ? Crown : Shield;
@@ -253,10 +252,14 @@ export default function PricingPlansClient({
                 onClick={() => handleGetStarted(plan)}
                 disabled={
                   isCreating ||
-                  (plan.name.toLowerCase().includes("pro") && isAuthenticated && isProUser)
+                  (plan.name.toLowerCase().includes("pro") &&
+                    isAuthenticated &&
+                    isProUser)
                 }
               >
-                {plan.name.toLowerCase().includes("pro") && isAuthenticated && isProUser ? (
+                {plan.name.toLowerCase().includes("pro") &&
+                isAuthenticated &&
+                isProUser ? (
                   <>
                     <Check className="size-4" />
                     Current Plan

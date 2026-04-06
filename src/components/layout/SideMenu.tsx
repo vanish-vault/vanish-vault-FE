@@ -34,8 +34,8 @@ export function SideMenu({ children }: { children: ReactNode }) {
           {/* User Info */}
           <div className="p-6 border-b border-border/50">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-gradient-to-br from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] shadow-lg shadow-indigo-500/25">
-                <Shield className="size-5 text-white" />
+              <div className="p-1 rounded-lg bg-card border border-border shadow-md shrink-0">
+                <img src="/favicon.png" alt="VanishVault" className="size-8" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold truncate" suppressHydrationWarning>

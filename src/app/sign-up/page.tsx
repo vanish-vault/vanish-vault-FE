@@ -162,8 +162,8 @@ export default function SignUpPage() {
       <AnimatedSection animate="scale" className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-2 mb-4">
-            <div className="p-3 rounded-xl bg-gradient-to-br from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] shadow-lg shadow-indigo-500/25">
-              <Lock className="size-6 text-white" />
+            <div className="p-1 rounded-xl bg-card border border-border/50 shadow-lg shadow-indigo-500/10">
+              <img src="/favicon.png" alt="VanishVault" className="size-12" />
             </div>
           </div>
           <h1 className="text-3xl font-bold mb-2">Create Account</h1>

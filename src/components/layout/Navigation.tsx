@@ -13,7 +13,7 @@ import { Button } from "@/src/components/ui";
 export function Navigation() {
   const [isMounted, setIsMounted] = useState(false);
   const pathname = usePathname();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const { isAuthenticated } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
@@ -29,13 +29,18 @@ export function Navigation() {
       className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 backdrop-blur-xl bg-background/80"
     >
       <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="p-2 rounded-lg bg-gradient-to-br from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] shadow-lg group-hover:shadow-xl transition-shadow">
-            <Shield className="size-5 text-white" />
-          </div>
-          <span className="text-xl font-semibold bg-gradient-to-r from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] bg-clip-text text-transparent">
-            VanishVault
-          </span>
+        <Link href="/" className="flex items-center group">
+          {isMounted ? (
+            <img
+              src={resolvedTheme === "dark" ? "/night-logo.png" : "/day-logo.png"}
+              alt="VanishVault"
+              className="h-10 w-auto"
+            />
+          ) : (
+            <span className="text-xl font-semibold bg-gradient-to-r from-[var(--gradient-from)] via-[var(--gradient-via)] to-[var(--gradient-to)] bg-clip-text text-transparent">
+              VanishVault
+            </span>
+          )}
         </Link>
 
         <div className="flex items-center gap-6">

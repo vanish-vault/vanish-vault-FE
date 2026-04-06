@@ -13,8 +13,8 @@ export function HeroSection() {
       transition={{ delay: 0.2 }}
       className="text-center max-w-4xl mx-auto"
     >
-      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-blue-500/10 border border-indigo-500/20 mb-8">
-        <Shield className="size-4 text-indigo-500" />
+      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-blue-500/10 border border-indigo-500/20 mb-8">
+        <img src="/favicon.png" alt="VanishVault" className="size-4" />
         <span className="text-sm text-muted-foreground">
           Trusted by professionals
         </span>
