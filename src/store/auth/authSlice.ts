@@ -29,39 +29,54 @@ const initialState: AuthState = {
 
 export const signIn = createAsyncThunk(
   "auth/signIn",
-  async ({ email, password }: { email: string; password: string }) => {
-    const data = await authService.login({ identifier: email, password });
-    const { user, accessToken, refreshToken } = data;
-    authService.setAuthData(user, accessToken ?? null, refreshToken ?? null);
-    return user as User;
+  async ({ email, password }: { email: string; password: string }, { rejectWithValue }) => {
+    try {
+      const data = await authService.login({ identifier: email, password });
+      const { user, accessToken, refreshToken } = data;
+      authService.setAuthData(user, accessToken ?? null, refreshToken ?? null);
+      return user as User;
+    } catch (err: any) {
+      return rejectWithValue(err.message || "Invalid credentials");
+    }
   },
 );
 
 export const signUp = createAsyncThunk(
   "auth/signUp",
-  async ({
-    email,
-    username,
-    password,
-  }: {
-    email: string;
-    password: string;
-    username: string;
-  }) => {
-    const data = await authService.register({ email, username, password });
-    const { user, accessToken, refreshToken } = data;
-    authService.setAuthData(user, accessToken ?? null, refreshToken ?? null);
-    return user as User;
+  async (
+    {
+      email,
+      username,
+      password,
+    }: {
+      email: string;
+      password: string;
+      username: string;
+    },
+    { rejectWithValue },
+  ) => {
+    try {
+      const data = await authService.register({ email, username, password });
+      const { user, accessToken, refreshToken } = data;
+      authService.setAuthData(user, accessToken ?? null, refreshToken ?? null);
+      return user as User;
+    } catch (err: any) {
+      return rejectWithValue(err.message || "Failed to create account");
+    }
   },
 );
 
 export const signInWithGoogle = createAsyncThunk(
   "auth/signInWithGoogle",
-  async (idToken: string) => {
-    const data = await authService.googleAuth(idToken);
-    const { user, accessToken, refreshToken } = data;
-    authService.setAuthData(user, accessToken ?? null, refreshToken ?? null);
-    return user as User;
+  async (idToken: string, { rejectWithValue }) => {
+    try {
+      const data = await authService.googleAuth(idToken);
+      const { user, accessToken, refreshToken } = data;
+      authService.setAuthData(user, accessToken ?? null, refreshToken ?? null);
+      return user as User;
+    } catch (err: any) {
+      return rejectWithValue(err.message || "Google sign in failed");
+    }
   },
 );
 
@@ -108,7 +123,7 @@ const authSlice = createSlice({
     };
     const handleRejected = (state: AuthState, action: any) => {
       state.isLoading = false;
-      state.error = action.error.message ?? "Something went wrong";
+      state.error = (action.payload as string) || action.error.message || "Something went wrong";
     };
 
     builder

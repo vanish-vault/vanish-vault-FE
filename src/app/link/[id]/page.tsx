@@ -60,7 +60,8 @@ function AccessLinkContent() {
   const [isPasswordProtected, setIsPasswordProtected] = useState(false);
 
   const timeRemaining = formatSeconds(secondsLeft);
-  const isExpired = expiresAt ? secondsLeft <= 0 : false;
+  const [isNotFound, setIsNotFound] = useState(false);
+  const isExpired = (expiresAt ? secondsLeft <= 0 : false) || isNotFound;
 
   useEffect(() => {
     if (!id || !decryptionKey) return;
@@ -74,7 +75,11 @@ function AccessLinkContent() {
         const diff = Math.floor((exp.getTime() - Date.now()) / 1000);
         setSecondsLeft(diff > 0 ? diff : 0);
       } catch (err: any) {
-        toast.error(err.message || "Unable to check secret");
+        if (err.status === 404) {
+          setIsNotFound(true);
+        } else {
+          toast.error(err.message || "Unable to check secret");
+        }
       }
     };
     fetchMeta();
@@ -115,7 +120,11 @@ function AccessLinkContent() {
       }
       toast.success("Access granted!");
     } catch (err: any) {
-      toast.error(err.message || "Failed to retrieve secret");
+      if (err.status === 404) {
+        setIsNotFound(true);
+      } else {
+        toast.error(err.message || "Failed to retrieve secret");
+      }
     }
   };
 

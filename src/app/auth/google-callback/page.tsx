@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 export default function GoogleCallbackPage() {
   useEffect(() => {
@@ -24,13 +25,23 @@ export default function GoogleCallbackPage() {
             window.location.origin,
           );
         }
-        // optionally close after short delay
-        setTimeout(() => window.close(), 300);
+        // Close almost immediately after posting the message
+        setTimeout(() => window.close(), 50);
       }
     } catch (e) {
-      // ignore
+      // ignore errors but still try to close
+      window.close();
     }
   }, []);
 
-  return <div>Signing you in…</div>;
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen bg-[#030712] text-white">
+      <div className="flex flex-col items-center gap-4 animate-in fade-in duration-300">
+        <Loader2 className="size-8 text-indigo-500 animate-spin" />
+        <p className="text-sm font-medium text-muted-foreground animate-pulse">
+          Completing authentication...
+        </p>
+      </div>
+    </div>
+  );
 }

@@ -6,6 +6,7 @@ async function handleResponse(res: Response) {
     const message = body?.error?.message || body?.message || res.statusText;
     const err: any = new Error(message);
     err.details = body?.error?.details ?? null;
+    err.status = res.status;
     throw err;
   }
   return body;

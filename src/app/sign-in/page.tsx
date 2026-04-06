@@ -37,7 +37,8 @@ export default function SignInPage() {
       toast.success("Welcome back!");
       router.push("/dashboard/secrets");
     } else {
-      toast.error("Invalid credentials");
+      const errorMsg = (result.payload as string) || (result as any).error?.message || "Invalid credentials";
+      toast.error(errorMsg);
     }
   };
 
@@ -147,7 +148,8 @@ export default function SignInPage() {
         toast.success("Welcome back!");
         router.push("/dashboard/secrets");
       } else {
-        toast.error("Google sign in failed");
+        const errorMsg = (result.payload as string) || (result as any).error?.message || "Google sign in failed";
+        toast.error(errorMsg);
       }
     } catch (err: any) {
       toast.error(err?.message || "Google sign in failed");

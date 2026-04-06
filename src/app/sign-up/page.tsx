@@ -24,12 +24,16 @@ export default function SignUpPage() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    const result = dispatch(signUp({ email, password, username }));
+    const result = await dispatch(signUp({ email, password, username }));
     if (signUp.fulfilled.match(result)) {
       toast.success("Account created successfully!");
       router.push("/dashboard/secrets");
     } else {
-      toast.error("Failed to create account");
+      const errorMsg =
+        (result.payload as string) ||
+        (result as any).error?.message ||
+        "Failed to create account";
+      toast.error(errorMsg);
     }
   };
 
